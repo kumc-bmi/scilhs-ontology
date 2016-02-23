@@ -22,26 +22,31 @@ data_type_xlate = dict(
     IMPORT_DATE=date_format)
 
 
-def main(open_argv, open_subpath):
+def main(open_argv, open_subpath, override_schema):
     with open_argv(1, 'rb') as inf:
         sql = inf.read()
-    for st, cols in get_stcols(sql).items():
+
+    for st, cols in get_stcols(sql, override_schema).items():
         with open_subpath(st.split('.')[1] + '.ctl', 'wb') as fout:
             fout.write(ctl_template % dict(schema_table=st,
                                            columns=',\n  '.join(cols)))
 
 
-def get_stcols(sql):
+def get_stcols(sql, override_schema=''):
     def xlate_col(col):
         if col in data_type_xlate:
             return ' '.join([col, data_type_xlate[col]])
         return col
 
     st_cols = dict()
-    for schema, table, col_blk in findall('CREATE TABLE (?P<schema>.*?)\.'
-                                          '(?P<table>.*?)\((?P<columns>.*?);',
-                                          sql, flags=DOTALL):
-        key = '%s.%s' % (schema.strip(), table.strip())
+    for _, schema, table, col_blk in findall(
+            'CREATE TABLE ((?P<schema>.*?)\.)?'
+            '(?P<table>.*?)\((?P<columns>.*?);',
+            sql, flags=DOTALL):
+
+        key = '.'.join([v for v in
+                        [override_schema or schema.strip(),
+                         table.strip()] if len(v.strip())])
         st_cols[key] = list()
         for col_line in [c for c in sub('[\r)]', '', col_blk).split('\n')
                          if len(c.strip()) > 0]:
@@ -70,5 +75,10 @@ if __name__ == '__main__':
             with open(path, mode) as f:
                 yield f
 
-        return dict(open_argv=open_argv, open_subpath=open_subpath)
+        override_schema = ''
+        if len(argv) > 2:
+            override_schema = argv[2]
+
+        return dict(open_argv=open_argv, open_subpath=open_subpath,
+                    override_schema=override_schema)
     main(**_tcb())
