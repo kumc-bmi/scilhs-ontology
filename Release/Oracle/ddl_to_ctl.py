@@ -30,6 +30,7 @@ def main(open_argv, open_subpath, override_schema):
         with open_subpath(st.split('.')[1] + '.ctl', 'wb') as fout:
             fout.write(ctl_template % dict(schema_table=st,
                                            columns=',\n  '.join(cols)))
+            print st
 
 
 def get_stcols(sql, override_schema=''):
