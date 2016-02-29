@@ -3,7 +3,7 @@
 from contextlib import contextmanager
 from re import findall, search, sub, DOTALL
 
-ctl_template = '''options (direct=true, errors=0, skip=1)
+ctl_template = '''options (errors=0, skip=1)
 load data
 truncate into table %(schema_table)s
 fields terminated by '|' optionally enclosed by '"'
