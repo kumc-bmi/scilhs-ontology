@@ -13,6 +13,9 @@
 for i in *.zip; do unzip -o $i; done
 for i in *.txt; do mv -f $i `echo $i | tr [:lower:] [:upper:]`; done
 
+# Fixup newlines
+python rm_field_newlines.py PCORNET_MED.TXT
+
 # Generate .ctl files for sqlldr - save off the schema/tables found
 python ddl_to_ctl.py ${create_oracle_metadata_tables} ${i2b2_meta_schema} > ${ontology_tables}
 
