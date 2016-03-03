@@ -12,7 +12,7 @@
 # Some of the ontology files are zipped, some are not.  Capitalization isn't consistent.
 for i in *.zip; do unzip -o $i; done
 for i in *.txt; do mv -f $i `echo $i | tr [:lower:] [:upper:]`; done
-mv PCORNET_PROC_NOCPT.txt PCORNET_PROC.txt
+mv PCORNET_PROC_NOCPT.TXT PCORNET_PROC.TXT
 
 # Fixup newlines
 python rm_field_newlines.py PCORNET_MED.TXT
