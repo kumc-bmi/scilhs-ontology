@@ -1,4 +1,20 @@
 ''' ddl_to_ctl - create sqlldr .ctl's from .sql with "create table" statements
+
+>>> sql = """CREATE TABLE meta.diag ( "Level" INTEGER,
+...                                   "Name" VARCHAR);"""
+>>> st, table, ctl = sql_to_ctl(sql).next()
+>>> (st, table)
+('meta.diag', 'diag')
+>>> print ctl
+options (errors=0, skip=1)
+load data
+truncate into table meta.diag
+fields terminated by '|' optionally enclosed by '"'
+trailing nullcols(
+  Level,
+  Name
+  )
+
 '''
 from re import findall, search, sub, DOTALL
 
@@ -32,12 +48,18 @@ def main(argv, stdout, cwd):
     with (cwd / sql_fn).open('rb') as inf:
         sql = inf.read()
 
+    for st, table, ctl in sql_to_ctl(sql, override_schema):
+        with (cwd / (table + '.ctl')).open('wb') as fout:
+            fout.write(ctl)
+        print >>stdout, st
+
+
+def sql_to_ctl(sql, override_schema=''):
     for st, cols in get_stcols(sql, override_schema).items():
         schema, table = st.split('.')
-        with (cwd / (table + '.ctl')).open('wb') as fout:
-            fout.write(ctl_template % dict(schema_table=st,
-                                           columns=',\n  '.join(cols)))
-            print >>stdout, st
+        ctl = ctl_template % dict(schema_table=st,
+                                  columns=',\n  '.join(cols))
+        yield st, table, ctl
 
 
 def get_stcols(sql, override_schema=''):
