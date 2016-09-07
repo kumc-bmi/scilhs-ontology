@@ -57,7 +57,7 @@ def get_stcols(sql, override_schema=''):
 
 
 if __name__ == '__main__':
-    def _tcb():
+    def _script():
         from sys import argv
         from os.path import dirname, abspath, realpath
 
@@ -80,6 +80,7 @@ if __name__ == '__main__':
         if len(argv) > 2:
             override_schema = argv[2]
 
-        return dict(open_argv=open_argv, open_subpath=open_subpath,
-                    override_schema=override_schema)
-    main(**_tcb())
+        main(open_argv=open_argv, open_subpath=open_subpath,
+             override_schema=override_schema)
+
+    _script()
