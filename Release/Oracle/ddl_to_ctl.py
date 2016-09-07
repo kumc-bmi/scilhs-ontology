@@ -12,7 +12,9 @@ trailing nullcols(
 
 date_format = "DATE 'YYYY/MM/DD HH:MI:SS AM'"
 data_type_xlate = dict(
-    C_METADATAXML='CHAR(100000)',
+    # skip blob column so that we can use direct path load
+    C_METADATAXML='FILLER',
+    C_COMMENT='FILLER',
     C_TOOLTIP='CHAR(900)',
     C_NAME='CHAR(2000)',
     C_DIMCODE='CHAR(700)',
@@ -21,7 +23,7 @@ data_type_xlate = dict(
     IMPORT_DATE=date_format)
 
 
-def main(argv, cwd):
+def main(argv, stdout, cwd):
     override_schema = ''
     if len(argv) > 2:
         override_schema = argv[2]
@@ -31,11 +33,11 @@ def main(argv, cwd):
         sql = inf.read()
 
     for st, cols in get_stcols(sql, override_schema).items():
-        schema, table = st
+        schema, table = st.split('.')
         with (cwd / (table + '.ctl')).open('wb') as fout:
             fout.write(ctl_template % dict(schema_table=st,
                                            columns=',\n  '.join(cols)))
-            print st
+            print >>stdout, st
 
 
 def get_stcols(sql, override_schema=''):
@@ -88,10 +90,10 @@ class Path(object):
 
 if __name__ == '__main__':
     def _script():
-        from sys import argv
+        from sys import argv, stdout
         from io import open as io_open
         from os.path import join as joinpath
 
-        main(argv=argv[:], cwd=Path('.', (io_open, joinpath)))
+        main(argv[:], stdout, cwd=Path('.', (io_open, joinpath)))
 
     _script()
