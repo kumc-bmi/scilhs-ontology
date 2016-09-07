@@ -1,6 +1,5 @@
 ''' ddl_to_ctl - create sqlldr .ctl's from .sql with "create table" statements
 '''
-from contextlib import contextmanager
 from re import findall, search, sub, DOTALL
 
 ctl_template = '''options (errors=0, skip=1)
@@ -22,12 +21,18 @@ data_type_xlate = dict(
     IMPORT_DATE=date_format)
 
 
-def main(open_argv, open_subpath, override_schema):
-    with open_argv(1, 'rb') as inf:
+def main(argv, cwd):
+    override_schema = ''
+    if len(argv) > 2:
+        override_schema = argv[2]
+
+    sql_fn = argv[1]
+    with (cwd / sql_fn).open('rb') as inf:
         sql = inf.read()
 
     for st, cols in get_stcols(sql, override_schema).items():
-        with open_subpath(st.split('.')[1] + '.ctl', 'wb') as fout:
+        schema, table = st
+        with (cwd / (table + '.ctl')).open('wb') as fout:
             fout.write(ctl_template % dict(schema_table=st,
                                            columns=',\n  '.join(cols)))
             print st
@@ -56,31 +61,22 @@ def get_stcols(sql, override_schema=''):
     return st_cols
 
 
+class Path(object):
+    def __init__(self, path, ops):
+        io_open, joinpath = ops
+        self.open = lambda mode='rb': io_open(path, mode=mode)
+        self.joinpath = lambda other: Path(joinpath(path, other), ops)
+
+    def __div__(self, other):
+        return self.joinpath(other)
+
+
 if __name__ == '__main__':
     def _script():
         from sys import argv
-        from os.path import dirname, abspath, realpath
+        from io import open as io_open
+        from os.path import join as joinpath
 
-        @contextmanager
-        def open_argv(idx, mode):
-            with open(argv[idx], mode) as f:
-                yield f
-
-        @contextmanager
-        def open_subpath(path, mode):
-            script_path = dirname(realpath(__file__))
-            ap = abspath(path)
-            if script_path not in abspath(path):
-                raise ValueError('Can\'t open outside script directory: %s' %
-                                 path)
-            with open(path, mode) as f:
-                yield f
-
-        override_schema = ''
-        if len(argv) > 2:
-            override_schema = argv[2]
-
-        main(open_argv=open_argv, open_subpath=open_subpath,
-             override_schema=override_schema)
+        main(argv=argv[:], cwd=Path('.', (io_open, joinpath)))
 
     _script()
