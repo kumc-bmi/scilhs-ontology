@@ -39,6 +39,21 @@ def main(argv, cwd):
 
 
 def get_stcols(sql, override_schema=''):
+    r'''Get sqlldr column specifications from a CREATE TABLE statement.
+
+    We expect column names to be quoted and on separate lines:
+    >>> get_stcols("""CREATE TABLE S.T ( "X" INTEGER,
+    ...                                  "Y" NUMERIC);""")
+    {'S.T': ['X', 'Y']}
+
+    Override the schema:
+    >>> get_stcols('CREATE TABLE S.T ( "X" INTEGER);', override_schema='S2')
+    {'S2.T': ['X']}
+
+    Predefined datatypes:
+    >>> get_stcols('CREATE TABLE S.T ( "C_DIMCODE" VARCHAR(100));')
+    {'S.T': ['C_DIMCODE CHAR(700)']}
+    '''
     def xlate_col(col):
         if col in data_type_xlate:
             return ' '.join([col, data_type_xlate[col]])
